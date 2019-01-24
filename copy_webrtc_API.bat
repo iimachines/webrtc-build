@@ -42,5 +42,7 @@ call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ modules\video
 call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ modules\video_coding\codecs\vp8\include	
 call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ modules\video_coding\codecs\vp9\include	
 call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ common_audio\include						
+call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ common_video\include						
+call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ common_video\libyuv\include						
 call %batchDirectory%\copy_include_folder %src%\ %include%\webrtc\ system_wrappers\include					
 
