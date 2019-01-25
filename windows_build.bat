@@ -3,6 +3,8 @@
 set "currentDirectory=%cd%"
 set "batchDirectory=%~dp0%"
 
+set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+
 echo This script assumes you have installed the Google depot_tools, see https://webrtc.org/native-code/development
 
 echo ----------------------------------------------------------------
@@ -18,29 +20,30 @@ if not exist webrtc-checkout (
     call fetch --nohooks webrtc
     if errorlevel 1 goto :error
 ) else (
+    echo Updating webrtc source code...
+
     cd webrtc-checkout
     if errorlevel 1 goto :error
+
+    pushd src
+    if errorlevel 1 goto :error
+
+    git checkout master
+    if errorlevel 1 goto :error
+
+    git pull origin master
+    if errorlevel 1 goto :error
+    popd
 )
 
 echo ----------------------------------------------------------------
 
-:update
+:sync
 
-echo Updating webrtc source code...
-
-pushd src
+echo Synching webrtc source code...
+call gclient sync -f
 if errorlevel 1 goto :error
-
-git checkout master
-if errorlevel 1 goto :error
-
-git pull origin master
-if errorlevel 1 goto :error
-
-call gclient sync
-if errorlevel 1 goto :error
-popd
-
+ 
 echo ----------------------------------------------------------------
 
 :gen
