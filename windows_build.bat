@@ -6,7 +6,7 @@ set "batchDir=%~dp0%"
 
 REM H264 support can only be compiled with clang, not MSVC. 
 REM Downside is source debugging in Visual Studio is not yet suported when using clang :(
-set "h264=1"
+set "h264=0"
 
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
 

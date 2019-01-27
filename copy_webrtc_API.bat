@@ -14,7 +14,9 @@ set "include=%batchDir%include"
 
 rd /s /q "%include%"
 
-if "%h264%"==1 then (
+echo Copying to %include%, H264=%h264%
+
+if %h264%==1 then (
     xcopy /y /i /d %out%\windows_clang_debug_x64\obj\webrtc.lib    %lib%\windows_debug_x64\
     xcopy /y /i /d %out%\windows_clang_release_x64\obj\webrtc.lib  %lib%\windows_release_x64\
 ) else (
@@ -60,7 +62,7 @@ call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ system_wrappers\inc
 
 call %batchDir%\copy_include_folder %src%\ %include%\ third_party\libyuv\include\libyuv
 
-if "%h264%"==1 then (
+if %h264%==1 then (
     call %batchDir%\copy_include_folder %src%\ %include%\ third_party\openh264\src\codec\api\svc
     call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ common_video\h264					
     call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ modules\video_coding\codecs\h264\include	
