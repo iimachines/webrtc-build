@@ -12,7 +12,7 @@ set DEPOT_TOOLS_WIN_TOOLCHAIN=0
 
 echo This script assumes you have installed the Google depot_tools, see https://webrtc.org/native-code/development
 
-REM goto :rev
+if NOT "%1"=="" goto %1
 
 echo ----------------------------------------------------------------
 
