@@ -26,6 +26,7 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/rtc_error.h"
+#include "api/units/data_rate.h"
 #include "api/video/encoded_image.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/deprecation.h"
@@ -47,6 +48,12 @@ class AudioPacketReceivedObserver {
   // Invoked for the first received audio packet on a given channel id.
   // It will be invoked once for each channel id.
   virtual void OnFirstAudioPacketReceived(int64_t channel_id) = 0;
+};
+
+struct MediaTransportAllocatedBitrateLimits {
+  DataRate min_pacing_rate = DataRate::Zero();
+  DataRate max_padding_bitrate = DataRate::Zero();
+  DataRate max_total_allocated_bitrate = DataRate::Zero();
 };
 
 // A collection of settings for creation of media transport.
@@ -250,9 +257,6 @@ class MediaTransportVideoSinkInterface {
   // Called when new encoded video frame is received.
   virtual void OnData(uint64_t channel_id,
                       MediaTransportEncodedVideoFrame frame) = 0;
-
-  // TODO(bugs.webrtc.org/9719): Belongs on send side, not receive side.
-  RTC_DEPRECATED virtual void OnKeyFrameRequested(uint64_t channel_id) {}
 };
 
 // Interface for video sender to be notified of received key frame request.
@@ -448,6 +452,11 @@ class MediaTransportInterface {
   // Media transport does not invoke this callback concurrently.
   virtual void SetMediaTransportStateCallback(
       MediaTransportStateCallback* callback) = 0;
+
+  // Updates allocation limits.
+  // TODO(psla): Make abstract when downstream implementation implement it.
+  virtual void SetAllocatedBitrateLimits(
+      const MediaTransportAllocatedBitrateLimits& limits);
 
   // Sends a data buffer to the remote endpoint using the given send parameters.
   // |buffer| may not be larger than 256 KiB. Returns an error if the send
