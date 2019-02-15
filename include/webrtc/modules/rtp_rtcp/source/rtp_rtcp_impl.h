@@ -32,6 +32,8 @@
 #include "modules/rtp_rtcp/source/rtcp_receiver.h"
 #include "modules/rtp_rtcp/source/rtcp_sender.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
+#include "modules/rtp_rtcp/source/rtp_sender_audio.h"
+#include "modules/rtp_rtcp/source/rtp_sender_video.h"
 #include "rtc_base/critical_section.h"
 #include "rtc_base/gtest_prod_util.h"
 
@@ -323,7 +325,7 @@ class ModuleRtpRtcpImpl : public RtpRtcp, public RTCPReceiver::ModuleRtpRtcp {
   RTCPReceiver* rtcp_receiver() { return &rtcp_receiver_; }
   const RTCPReceiver* rtcp_receiver() const { return &rtcp_receiver_; }
 
-  const Clock* clock() const { return clock_; }
+  Clock* clock() const { return clock_; }
 
  private:
   FRIEND_TEST_ALL_PREFIXES(RtpRtcpImplTest, Rtt);
@@ -336,12 +338,12 @@ class ModuleRtpRtcpImpl : public RtpRtcp, public RTCPReceiver::ModuleRtpRtcp {
   bool TimeToSendFullNackList(int64_t now) const;
 
   std::unique_ptr<RTPSender> rtp_sender_;
+  std::unique_ptr<RTPSenderAudio> audio_;
+  std::unique_ptr<RTPSenderVideo> video_;
   RTCPSender rtcp_sender_;
   RTCPReceiver rtcp_receiver_;
 
-  const Clock* const clock_;
-
-  const bool audio_;
+  Clock* const clock_;
 
   const RtpKeepAliveConfig keepalive_config_;
   int64_t last_bitrate_process_time_;

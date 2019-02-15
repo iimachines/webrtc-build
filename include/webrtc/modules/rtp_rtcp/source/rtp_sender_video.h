@@ -19,6 +19,7 @@
 #include "common_types.h"  // NOLINT(build/include)
 #include "modules/rtp_rtcp/include/flexfec_sender.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/playout_delay_oracle.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
 #include "modules/rtp_rtcp/source/ulpfec_generator.h"
@@ -33,6 +34,17 @@ namespace webrtc {
 class FrameEncryptorInterface;
 class RtpPacketizer;
 class RtpPacketToSend;
+
+// kConditionallyRetransmitHigherLayers allows retransmission of video frames
+// in higher layers if either the last frame in that layer was too far back in
+// time, or if we estimate that a new frame will be available in a lower layer
+// in a shorter time than it would take to request and receive a retransmission.
+enum RetransmissionMode : uint8_t {
+  kRetransmitOff = 0x0,
+  kRetransmitBaseLayer = 0x2,
+  kRetransmitHigherLayers = 0x4,
+  kConditionallyRetransmitHigherLayers = 0x8,
+};
 
 class RTPSenderVideo {
  public:
@@ -71,6 +83,10 @@ class RTPSenderVideo {
   uint32_t FecOverheadRate() const;
   uint32_t PacketizationOverheadBps() const;
 
+  void OnReceivedAck(int64_t extended_highest_sequence_number) {
+    playout_delay_oracle_.OnReceivedAck(extended_highest_sequence_number);
+  }
+
  protected:
   static uint8_t GetTemporalId(const RTPVideoHeader& header);
   StorageType GetStorageType(uint8_t temporal_id,
@@ -105,6 +121,10 @@ class RTPSenderVideo {
                                   StorageType media_packet_storage,
                                   bool protect_media_packet);
 
+  bool LogAndSendToNetwork(std::unique_ptr<RtpPacketToSend> packet,
+                           StorageType storage,
+                           RtpPacketSender::Priority priority);
+
   bool red_enabled() const RTC_EXCLUSIVE_LOCKS_REQUIRED(crit_) {
     return red_payload_type_ >= 0;
   }
@@ -135,6 +155,10 @@ class RTPSenderVideo {
   VideoRotation last_rotation_ RTC_GUARDED_BY(crit_);
   absl::optional<ColorSpace> last_color_space_ RTC_GUARDED_BY(crit_);
   bool transmit_color_space_next_frame_ RTC_GUARDED_BY(crit_);
+  // Tracks the current request for playout delay limits from application
+  // and decides whether the current RTP frame should include the playout
+  // delay extension on header.
+  PlayoutDelayOracle playout_delay_oracle_;
 
   // RED/ULPFEC.
   int red_payload_type_ RTC_GUARDED_BY(crit_);
