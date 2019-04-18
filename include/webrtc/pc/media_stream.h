@@ -17,7 +17,7 @@
 
 #include "api/media_stream_interface.h"
 #include "api/notifier.h"
-#include "api/scoped_refptr.h"
+#include "rtc_base/scoped_ref_ptr.h"
 
 namespace webrtc {
 

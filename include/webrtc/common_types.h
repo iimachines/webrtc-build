@@ -23,6 +23,8 @@
 #pragma warning(disable : 4351)
 #endif
 
+#define RTP_PAYLOAD_NAME_SIZE 32u
+
 namespace webrtc {
 
 enum FrameType {

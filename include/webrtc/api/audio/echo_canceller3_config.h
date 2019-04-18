@@ -27,6 +27,7 @@ struct RTC_EXPORT EchoCanceller3Config {
   EchoCanceller3Config(const EchoCanceller3Config& e);
 
   struct Buffering {
+    bool use_new_render_buffering = true;
     size_t excess_render_detection_interval_blocks = 250;
     size_t max_allowed_excess_render_blocks = 8;
   } buffering;
@@ -37,9 +38,12 @@ struct RTC_EXPORT EchoCanceller3Config {
     size_t default_delay = 5;
     size_t down_sampling_factor = 4;
     size_t num_filters = 5;
+    size_t api_call_jitter_blocks = 26;
+    size_t min_echo_path_delay_blocks = 0;
     size_t delay_headroom_blocks = 2;
     size_t hysteresis_limit_1_blocks = 1;
     size_t hysteresis_limit_2_blocks = 1;
+    size_t skew_hysteresis_blocks = 3;
     size_t fixed_capture_delay_samples = 0;
     float delay_estimate_smoothing = 0.7f;
     float delay_candidate_detection_threshold = 0.2f;
@@ -116,6 +120,7 @@ struct RTC_EXPORT EchoCanceller3Config {
   struct EchoRemovalControl {
     struct GainRampup {
       float initial_gain = 0.0f;
+      float first_non_zero_gain = 0.001f;
       int non_zero_gain_blocks = 187;
       int full_gain_blocks = 312;
     } gain_rampup;

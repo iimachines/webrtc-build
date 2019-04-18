@@ -32,17 +32,17 @@ class Clock {
 
   // Return a timestamp in milliseconds relative to some arbitrary source; the
   // source is fixed for this clock.
-  virtual int64_t TimeInMilliseconds() = 0;
+  virtual int64_t TimeInMilliseconds() const = 0;
 
   // Return a timestamp in microseconds relative to some arbitrary source; the
   // source is fixed for this clock.
-  virtual int64_t TimeInMicroseconds() = 0;
+  virtual int64_t TimeInMicroseconds() const = 0;
 
   // Retrieve an NTP absolute timestamp.
-  virtual NtpTime CurrentNtpTime() = 0;
+  virtual NtpTime CurrentNtpTime() const = 0;
 
   // Retrieve an NTP absolute timestamp in milliseconds.
-  virtual int64_t CurrentNtpInMilliseconds() = 0;
+  virtual int64_t CurrentNtpInMilliseconds() const = 0;
 
   // Converts an NTP timestamp to a millisecond timestamp.
   static int64_t NtpToMs(uint32_t seconds, uint32_t fractions) {
@@ -61,17 +61,17 @@ class SimulatedClock : public Clock {
 
   // Return a timestamp in milliseconds relative to some arbitrary source; the
   // source is fixed for this clock.
-  int64_t TimeInMilliseconds() override;
+  int64_t TimeInMilliseconds() const override;
 
   // Return a timestamp in microseconds relative to some arbitrary source; the
   // source is fixed for this clock.
-  int64_t TimeInMicroseconds() override;
+  int64_t TimeInMicroseconds() const override;
 
   // Retrieve an NTP absolute timestamp.
-  NtpTime CurrentNtpTime() override;
+  NtpTime CurrentNtpTime() const override;
 
   // Converts an NTP timestamp to a millisecond timestamp.
-  int64_t CurrentNtpInMilliseconds() override;
+  int64_t CurrentNtpInMilliseconds() const override;
 
   // Advance the simulated clock with a given number of milliseconds or
   // microseconds.

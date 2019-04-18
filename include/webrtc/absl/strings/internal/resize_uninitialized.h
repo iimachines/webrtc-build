@@ -18,7 +18,6 @@
 #define ABSL_STRINGS_INTERNAL_RESIZE_UNINITIALIZED_H_
 
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "absl/base/port.h"
@@ -28,24 +27,22 @@ namespace absl {
 namespace strings_internal {
 
 // Is a subclass of true_type or false_type, depending on whether or not
-// T has a __resize_default_init member.
-template <typename string_type, typename = void>
-struct ResizeUninitializedTraits {
-  using HasMember = std::false_type;
-  static void Resize(string_type* s, size_t new_size) { s->resize(new_size); }
-};
+// T has a resize_uninitialized member.
+template <typename T, typename = void>
+struct HasResizeUninitialized : std::false_type {};
+template <typename T>
+struct HasResizeUninitialized<
+    T, absl::void_t<decltype(std::declval<T>().resize_uninitialized(237))>>
+    : std::true_type {};
 
-// __resize_default_init is provided by libc++ >= 8.0 and by Google's internal
-// ::string implementation.
 template <typename string_type>
-struct ResizeUninitializedTraits<
-    string_type, absl::void_t<decltype(std::declval<string_type&>()
-                                           .__resize_default_init(237))> > {
-  using HasMember = std::true_type;
-  static void Resize(string_type* s, size_t new_size) {
-    s->__resize_default_init(new_size);
-  }
-};
+void ResizeUninit(string_type* s, size_t new_size, std::true_type) {
+  s->resize_uninitialized(new_size);
+}
+template <typename string_type>
+void ResizeUninit(string_type* s, size_t new_size, std::false_type) {
+  s->resize(new_size);
+}
 
 // Returns true if the string implementation supports a resize where
 // the new characters added to the string are left untouched.
@@ -54,7 +51,7 @@ struct ResizeUninitializedTraits<
 // the previous function.)
 template <typename string_type>
 inline constexpr bool STLStringSupportsNontrashingResize(string_type*) {
-  return ResizeUninitializedTraits<string_type>::HasMember::value;
+  return HasResizeUninitialized<string_type>();
 }
 
 // Like str->resize(new_size), except any new characters added to "*str" as a
@@ -63,7 +60,7 @@ inline constexpr bool STLStringSupportsNontrashingResize(string_type*) {
 // store of the string with known data. Uses a Google extension to ::string.
 template <typename string_type, typename = void>
 inline void STLStringResizeUninitialized(string_type* s, size_t new_size) {
-  ResizeUninitializedTraits<string_type>::Resize(s, new_size);
+  ResizeUninit(s, new_size, HasResizeUninitialized<string_type>());
 }
 
 }  // namespace strings_internal

@@ -19,7 +19,6 @@
 #include <tuple>
 #include <vector>
 
-#include "absl/algorithm/container.h"
 #include "api/call/audio_sink.h"
 #include "media/base/audio_source.h"
 #include "media/base/media_engine.h"
@@ -102,7 +101,8 @@ class RtpHelper : public Base {
   void set_fail_set_send_codecs(bool fail) { fail_set_send_codecs_ = fail; }
   void set_fail_set_recv_codecs(bool fail) { fail_set_recv_codecs_ = fail; }
   virtual bool AddSendStream(const StreamParams& sp) {
-    if (absl::c_linear_search(send_streams_, sp)) {
+    if (std::find(send_streams_.begin(), send_streams_.end(), sp) !=
+        send_streams_.end()) {
       return false;
     }
     send_streams_.push_back(sp);
@@ -118,7 +118,8 @@ class RtpHelper : public Base {
     return RemoveStreamBySsrc(&send_streams_, ssrc);
   }
   virtual bool AddRecvStream(const StreamParams& sp) {
-    if (absl::c_linear_search(receive_streams_, sp)) {
+    if (std::find(receive_streams_.begin(), receive_streams_.end(), sp) !=
+        receive_streams_.end()) {
       return false;
     }
     receive_streams_.push_back(sp);
@@ -146,8 +147,8 @@ class RtpHelper : public Base {
       const webrtc::RtpParameters& parameters) {
     auto parameters_iterator = rtp_send_parameters_.find(ssrc);
     if (parameters_iterator != rtp_send_parameters_.end()) {
-      auto result = CheckRtpParametersInvalidModificationAndValues(
-          parameters_iterator->second, parameters);
+      auto result =
+          ValidateRtpParameters(parameters_iterator->second, parameters);
       if (!result.ok())
         return result;
 

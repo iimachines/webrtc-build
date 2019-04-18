@@ -86,7 +86,8 @@ class NetworkPacket {
 
 // Class faking a network link, internally is uses an implementation of a
 // SimulatedNetworkInterface to simulate network behavior.
-class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
+class FakeNetworkPipe : public webrtc::SimulatedPacketReceiverInterface,
+                        public Transport {
  public:
   // Will keep |network_behavior| alive while pipe is alive itself.
   // Use these constructors if you plan to insert packets using DeliverPacket().
@@ -118,8 +119,8 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   // constructor.
   bool SendRtp(const uint8_t* packet,
                size_t length,
-               const PacketOptions& options);
-  bool SendRtcp(const uint8_t* packet, size_t length);
+               const PacketOptions& options) override;
+  bool SendRtcp(const uint8_t* packet, size_t length) override;
 
   // Implements the PacketReceiver interface. When/if packets are delivered,
   // they will be passed directly to the receiver instance given in
@@ -137,7 +138,8 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   // Processes the network queues and trigger PacketReceiver::IncomingPacket for
   // packets ready to be delivered.
   void Process() override;
-  absl::optional<int64_t> TimeUntilNextProcess() override;
+  int64_t TimeUntilNextProcess() override;
+  void ProcessThreadAttached(ProcessThread* process_thread) override;
 
   // Get statistics.
   float PercentageLoss();
@@ -191,6 +193,10 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   // |process_lock| guards the data structures involved in delay and loss
   // processes, such as the packet queues.
   rtc::CriticalSection process_lock_;
+
+  rtc::CriticalSection process_thread_lock_;
+  ProcessThread* process_thread_ RTC_GUARDED_BY(process_thread_lock_) = nullptr;
+
   // Packets  are added at the back of the deque, this makes the deque ordered
   // by increasing send time. The common case when removing packets from the
   // deque is removing early packets, which will be close to the front of the

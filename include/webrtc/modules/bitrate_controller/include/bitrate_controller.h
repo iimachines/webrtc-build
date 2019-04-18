@@ -62,11 +62,11 @@ class BitrateController : public Module, public RtcpBandwidthObserver {
   // Deprecated:
   // TODO(perkj): BitrateObserver has been deprecated and is not used in WebRTC.
   // Remove this method once other other projects does not use it.
-  static BitrateController* CreateBitrateController(Clock* clock,
+  static BitrateController* CreateBitrateController(const Clock* clock,
                                                     BitrateObserver* observer,
                                                     RtcEventLog* event_log);
 
-  static BitrateController* CreateBitrateController(Clock* clock,
+  static BitrateController* CreateBitrateController(const Clock* clock,
                                                     RtcEventLog* event_log);
 
   ~BitrateController() override {}

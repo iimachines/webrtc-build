@@ -231,12 +231,6 @@ class ArrayView final : public impl::ArrayViewBase<T, Size> {
                               HasDataAndSize<U, T>::value>::type* = nullptr>
   ArrayView(U& u)  // NOLINT
       : ArrayView(u.data(), u.size()) {}
-  template <
-      typename U,
-      typename std::enable_if<Size == impl::kArrayViewVarSize &&
-                              HasDataAndSize<U, T>::value>::type* = nullptr>
-  ArrayView(const U& u)  // NOLINT(runtime/explicit)
-      : ArrayView(u.data(), u.size()) {}
 
   // Indexing and iteration. These allow mutation even if the ArrayView is
   // const, because the ArrayView doesn't own the array. (To prevent mutation,

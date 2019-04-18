@@ -11,7 +11,6 @@
 #ifndef RTC_BASE_NUMERICS_SAMPLES_STATS_COUNTER_H_
 #define RTC_BASE_NUMERICS_SAMPLES_STATS_COUNTER_H_
 
-#include <math.h>
 #include <limits>
 #include <vector>
 
@@ -23,10 +22,8 @@ class SamplesStatsCounter {
  public:
   SamplesStatsCounter();
   ~SamplesStatsCounter();
-  SamplesStatsCounter(const SamplesStatsCounter&);
-  SamplesStatsCounter& operator=(const SamplesStatsCounter&);
+  SamplesStatsCounter(SamplesStatsCounter&);
   SamplesStatsCounter(SamplesStatsCounter&&);
-  SamplesStatsCounter& operator=(SamplesStatsCounter&&);
 
   // Adds sample to the stats in amortized O(1) time.
   void AddSample(double value);
@@ -52,18 +49,6 @@ class SamplesStatsCounter {
     RTC_DCHECK(!IsEmpty());
     return sum_ / samples_.size();
   }
-  // Returns variance in O(1) time. This function may not be called if there are
-  // no samples.
-  double GetVariance() const {
-    RTC_DCHECK(!IsEmpty());
-    return sum_squared_ / samples_.size() - GetAverage() * GetAverage();
-  }
-  // Returns standard deviation in O(1) time. This function may not be called if
-  // there are no samples.
-  double GetStandardDeviation() const {
-    RTC_DCHECK(!IsEmpty());
-    return sqrt(GetVariance());
-  }
   // Returns percentile in O(nlogn) on first call and in O(1) after, if no
   // additions were done. This function may not be called if there are no
   // samples.
@@ -77,7 +62,6 @@ class SamplesStatsCounter {
   double min_ = std::numeric_limits<double>::max();
   double max_ = std::numeric_limits<double>::min();
   double sum_ = 0;
-  double sum_squared_ = 0;
   bool sorted_ = false;
 };
 

@@ -19,10 +19,6 @@
 
 namespace webrtc {
 
-// TODO(bugs.webrtc.org/10243): Remove when downstream projects stop using
-// RtpGenericFrameDescriptorExtension.
-using RtpGenericFrameDescriptorExtension00 = RtpGenericFrameDescriptorExtension;
-
 class RtpGenericFrameDescriptorExtension {
  public:
   using value_type = RtpGenericFrameDescriptor;

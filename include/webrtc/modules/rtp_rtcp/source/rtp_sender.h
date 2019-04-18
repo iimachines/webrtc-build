@@ -25,8 +25,10 @@
 #include "modules/rtp_rtcp/include/flexfec_sender.h"
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/playout_delay_oracle.h"
 #include "modules/rtp_rtcp/source/rtp_packet_history.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
+#include "modules/rtp_rtcp/source/rtp_utility.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/critical_section.h"
 #include "rtc_base/deprecation.h"
@@ -41,6 +43,8 @@ class OverheadObserver;
 class RateLimiter;
 class RtcEventLog;
 class RtpPacketToSend;
+class RTPSenderAudio;
+class RTPSenderVideo;
 
 class RTPSender {
  public:
@@ -48,10 +52,13 @@ class RTPSender {
             Clock* clock,
             Transport* transport,
             RtpPacketSender* paced_sender,
-            absl::optional<uint32_t> flexfec_ssrc,
+            // TODO(brandtr): Remove |flexfec_sender| when that is hooked up
+            // to PacedSender instead.
+            FlexfecSender* flexfec_sender,
             TransportSequenceNumberAllocator* sequence_number_allocator,
             TransportFeedbackObserver* transport_feedback_callback,
             BitrateStatisticsObserver* bitrate_callback,
+            FrameCountObserver* frame_count_observer,
             SendSideDelayObserver* send_side_delay_observer,
             RtcEventLog* event_log,
             SendPacketObserver* send_packet_observer,
@@ -68,7 +75,18 @@ class RTPSender {
 
   uint16_t ActualSendBitrateKbit() const;
 
+  uint32_t VideoBitrateSent() const;
+  uint32_t FecOverheadRate() const;
   uint32_t NackOverheadRate() const;
+  uint32_t PacketizationOverheadBps() const;
+
+  int32_t RegisterPayload(absl::string_view payload_name,
+                          const int8_t payload_type,
+                          const uint32_t frequency,
+                          const size_t channels,
+                          const uint32_t rate);
+
+  int32_t DeRegisterSendPayload(const int8_t payload_type);
 
   void SetSendingMediaStatus(bool enabled);
   bool SendingMedia() const;
@@ -94,6 +112,17 @@ class RTPSender {
 
   void SetMaxRtpPacketSize(size_t max_packet_size);
 
+  bool SendOutgoingData(FrameType frame_type,
+                        int8_t payload_type,
+                        uint32_t timestamp,
+                        int64_t capture_time_ms,
+                        const uint8_t* payload_data,
+                        size_t payload_size,
+                        const RTPFragmentationHeader* fragmentation,
+                        const RTPVideoHeader* rtp_header,
+                        uint32_t* transport_frame_id_out,
+                        int64_t expected_retransmission_time_ms);
+
   void SetExtmapAllowMixed(bool extmap_allow_mixed);
 
   // RTP header extension
@@ -110,6 +139,8 @@ class RTPSender {
   size_t TimeToSendPadding(size_t bytes, const PacedPacketInfo& pacing_info);
 
   // NACK.
+  int SelectiveRetransmissions() const;
+  int SetSelectiveRetransmissions(uint8_t settings);
   void OnReceivedNack(const std::vector<uint16_t>& nack_sequence_numbers,
                       int64_t avg_rtt);
 
@@ -118,6 +149,10 @@ class RTPSender {
   bool StorePackets() const;
 
   int32_t ReSendPacket(uint16_t packet_id);
+
+  // Feedback to decide when to stop sending the playout delay and MID header
+  // extensions.
+  void OnReceivedRtcpReportBlocks(const ReportBlockList& report_blocks);
 
   // RTX.
   void SetRtxStatus(int mode);
@@ -152,10 +187,26 @@ class RTPSender {
 
   absl::optional<uint32_t> FlexfecSsrc() const;
 
-  // Sends packet to |transport_| or to the pacer, depending on configuration.
   bool SendToNetwork(std::unique_ptr<RtpPacketToSend> packet,
                      StorageType storage,
                      RtpPacketSender::Priority priority);
+
+  // Audio.
+
+  // Send a DTMF tone using RFC 2833 (4733).
+  int32_t SendTelephoneEvent(uint8_t key, uint16_t time_ms, uint8_t level);
+
+  // Store the audio level in d_bov for
+  // header-extension-for-audio-level-indication.
+  int32_t SetAudioLevel(uint8_t level_d_bov);
+
+  uint32_t MaxConfiguredBitrateVideo() const;
+
+  // ULPFEC.
+  void SetUlpfecConfig(int red_payload_type, int ulpfec_payload_type);
+
+  bool SetFecParameters(const FecProtectionParams& delta_params,
+                        const FecProtectionParams& key_params);
 
   // Called on update of RTP statistics.
   void RegisterRtpStatisticsCallback(StreamDataCountersCallback* callback);
@@ -172,6 +223,9 @@ class RTPSender {
   void SendKeepAlive(uint8_t payload_type);
 
   void SetRtt(int64_t rtt_ms);
+
+ protected:
+  int32_t CheckPayloadType(int8_t payload_type, VideoCodecType* video_type);
 
  private:
   // Maps capture time in milliseconds to send-side delay in milliseconds.
@@ -194,7 +248,6 @@ class RTPSender {
   std::unique_ptr<RtpPacketToSend> BuildRtxPacket(
       const RtpPacketToSend& packet);
 
-  // Sends packet on to |transport_|, leaving the RTP module.
   bool SendPacketToNetwork(const RtpPacketToSend& packet,
                            const PacketOptions& options,
                            const PacedPacketInfo& pacing_info);
@@ -224,8 +277,8 @@ class RTPSender {
   Random random_ RTC_GUARDED_BY(send_critsect_);
 
   const bool audio_configured_;
-
-  const absl::optional<uint32_t> flexfec_ssrc_;
+  const std::unique_ptr<RTPSenderAudio> audio_;
+  const std::unique_ptr<RTPSenderVideo> video_;
 
   RtpPacketSender* const paced_sender_;
   TransportSequenceNumberAllocator* const transport_sequence_number_allocator_;
@@ -238,9 +291,15 @@ class RTPSender {
   size_t max_packet_size_;
 
   int8_t last_payload_type_ RTC_GUARDED_BY(send_critsect_);
+  std::map<int8_t, RtpUtility::Payload*> payload_type_map_;
 
   RtpHeaderExtensionMap rtp_header_extension_map_
       RTC_GUARDED_BY(send_critsect_);
+
+  // Tracks the current request for playout delay limits from application
+  // and decides whether the current RTP frame should include the playout
+  // delay extension on header.
+  PlayoutDelayOracle playout_delay_oracle_;
 
   RtpPacketHistory packet_history_;
   // TODO(brandtr): Remove |flexfec_packet_history_| when the FlexfecSender
@@ -252,12 +311,14 @@ class RTPSender {
   SendDelayMap send_delays_ RTC_GUARDED_BY(statistics_crit_);
   SendDelayMap::const_iterator max_delay_it_ RTC_GUARDED_BY(statistics_crit_);
   int64_t sum_delays_ms_ RTC_GUARDED_BY(statistics_crit_);
+  FrameCounts frame_counts_ RTC_GUARDED_BY(statistics_crit_);
   StreamDataCounters rtp_stats_ RTC_GUARDED_BY(statistics_crit_);
   StreamDataCounters rtx_rtp_stats_ RTC_GUARDED_BY(statistics_crit_);
   StreamDataCountersCallback* rtp_stats_callback_
       RTC_GUARDED_BY(statistics_crit_);
   RateStatistics total_bitrate_sent_ RTC_GUARDED_BY(statistics_crit_);
   RateStatistics nack_bitrate_sent_ RTC_GUARDED_BY(statistics_crit_);
+  FrameCountObserver* const frame_count_observer_;
   SendSideDelayObserver* const send_side_delay_observer_;
   RtcEventLog* const event_log_;
   SendPacketObserver* const send_packet_observer_;
@@ -265,6 +326,7 @@ class RTPSender {
 
   // RTP variables
   uint32_t timestamp_offset_ RTC_GUARDED_BY(send_critsect_);
+  uint32_t remote_ssrc_ RTC_GUARDED_BY(send_critsect_);
   bool sequence_number_forced_ RTC_GUARDED_BY(send_critsect_);
   uint16_t sequence_number_ RTC_GUARDED_BY(send_critsect_);
   uint16_t sequence_number_rtx_ RTC_GUARDED_BY(send_critsect_);

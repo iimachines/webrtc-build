@@ -90,13 +90,6 @@ class VideoReceiveStream {
     int width = 0;
     int height = 0;
 
-    uint32_t freeze_count = 0;
-    uint32_t pause_count = 0;
-    uint32_t total_freezes_duration_ms = 0;
-    uint32_t total_pauses_duration_ms = 0;
-    uint32_t total_frames_duration_ms = 0;
-    double sum_squared_frame_durations = 0.0;
-
     VideoContentType content_type = VideoContentType::UNSPECIFIED;
 
     int sync_offset_ms = std::numeric_limits<int>::max();
@@ -200,16 +193,17 @@ class VideoReceiveStream {
 
     MediaTransportInterface* media_transport = nullptr;
 
-    // Must always be set.
+    // Must not be 'nullptr' when the stream is started.
     rtc::VideoSinkInterface<VideoFrame>* renderer = nullptr;
 
     // Expected delay needed by the renderer, i.e. the frame will be delivered
     // this many milliseconds, if possible, earlier than the ideal render time.
+    // Only valid if 'renderer' is set.
     int render_delay_ms = 10;
 
-    // If false, pass frames on to the renderer as soon as they are
+    // If set, pass frames on to the renderer as soon as they are
     // available.
-    bool enable_prerenderer_smoothing = true;
+    bool disable_prerenderer_smoothing = false;
 
     // Identifier for an A/V synchronization group. Empty string to disable.
     // TODO(pbos): Synchronize streams in a sync group, not just video streams

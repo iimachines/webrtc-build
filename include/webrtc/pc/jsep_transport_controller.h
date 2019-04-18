@@ -83,19 +83,10 @@ class JsepTransportController : public sigslot::has_slots<> {
     bool active_reset_srtp_params = false;
     RtcEventLog* event_log = nullptr;
 
-    // Whether media transport is used for media.
-    bool use_media_transport_for_media = false;
-
-    // Whether media transport is used for data channels.
-    bool use_media_transport_for_data_channels = false;
-
     // Optional media transport factory (experimental). If provided it will be
-    // used to create media_transport (as long as either
-    // |use_media_transport_for_media| or
-    // |use_media_transport_for_data_channels| is set to true). However, whether
-    // it will be used to send / receive audio and video frames instead of RTP
-    // is determined by |use_media_transport_for_media|. Note that currently
-    // media_transport co-exists with RTP / RTCP transports and may use the same
+    // used to create media_transport and will be used to send / receive
+    // audio and video frames instead of RTP. Note that currently
+    // media_transport co-exists with RTP / RTCP transports and uses the same
     // underlying ICE transport.
     MediaTransportFactory* media_transport_factory = nullptr;
   };
@@ -182,11 +173,10 @@ class JsepTransportController : public sigslot::has_slots<> {
   void SetActiveResetSrtpParams(bool active_reset_srtp_params);
 
   // Allows to overwrite the settings from config. You may set or reset the
-  // media transport configuration on the jsep transport controller, as long as
-  // you did not call 'GetMediaTransport' or 'MaybeCreateJsepTransport'. Once
-  // Jsep transport is created, you can't change this setting.
-  void SetMediaTransportSettings(bool use_media_transport_for_media,
-                                 bool use_media_transport_for_data_channels);
+  // media transport factory on the jsep transport controller, as long as you
+  // did not call 'GetMediaTransport' or 'MaybeCreateJsepTransport'. Once Jsep
+  // transport is created, you can't change this setting.
+  void SetMediaTransportFactory(MediaTransportFactory* media_transport_factory);
 
   // All of these signals are fired on the signaling thread.
 
@@ -368,12 +358,6 @@ class JsepTransportController : public sigslot::has_slots<> {
   cricket::IceGatheringState ice_gathering_state_ = cricket::kIceGatheringNew;
 
   Config config_;
-  // Determines if Config::media_transport_factory should be used
-  // to create a media transport. (when falling back to RTP this may be false).
-  // This is a prerequisite, but is not sufficient to create media transport
-  // (the factory needs to be provided in the config, and config must allow for
-  // media transport).
-  bool is_media_transport_factory_enabled_ = true;
   const cricket::SessionDescription* local_desc_ = nullptr;
   const cricket::SessionDescription* remote_desc_ = nullptr;
   absl::optional<bool> initial_offerer_;

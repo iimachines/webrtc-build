@@ -18,10 +18,10 @@
 #include "api/media_stream_interface.h"
 #include "api/media_transport_interface.h"
 #include "api/peer_connection_interface.h"
-#include "api/scoped_refptr.h"
 #include "media/sctp/sctp_transport_internal.h"
 #include "pc/channel_manager.h"
 #include "rtc_base/rtc_certificate_generator.h"
+#include "rtc_base/scoped_ref_ptr.h"
 #include "rtc_base/thread.h"
 
 namespace rtc {
@@ -35,6 +35,12 @@ class RtcEventLog;
 
 class PeerConnectionFactory : public PeerConnectionFactoryInterface {
  public:
+  // Use the overloads of CreateVideoSource that take raw VideoCapturer
+  // pointers from PeerConnectionFactoryInterface.
+  // TODO(deadbeef): Remove this using statement once those overloads are
+  // removed.
+  using PeerConnectionFactoryInterface::CreateVideoSource;
+
   void SetOptions(const Options& options) override;
 
   rtc::scoped_refptr<PeerConnectionInterface> CreatePeerConnection(
@@ -60,6 +66,16 @@ class PeerConnectionFactory : public PeerConnectionFactoryInterface {
 
   rtc::scoped_refptr<AudioSourceInterface> CreateAudioSource(
       const cricket::AudioOptions& options) override;
+
+  rtc::scoped_refptr<VideoTrackSourceInterface> CreateVideoSource(
+      std::unique_ptr<cricket::VideoCapturer> capturer) override;
+  // This version supports filtering on width, height and frame rate.
+  // For the "constraints=null" case, use the version without constraints.
+  // TODO(hta): Design a version without MediaConstraintsInterface.
+  // https://bugs.chromium.org/p/webrtc/issues/detail?id=5617
+  rtc::scoped_refptr<VideoTrackSourceInterface> CreateVideoSource(
+      std::unique_ptr<cricket::VideoCapturer> capturer,
+      const MediaConstraintsInterface* constraints) override;
 
   rtc::scoped_refptr<VideoTrackInterface> CreateVideoTrack(
       const std::string& id,

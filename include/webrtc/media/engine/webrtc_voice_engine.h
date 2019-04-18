@@ -18,7 +18,6 @@
 
 #include "api/audio_codecs/audio_encoder_factory.h"
 #include "api/rtp_receiver_interface.h"
-#include "api/scoped_refptr.h"
 #include "call/audio_state.h"
 #include "call/call.h"
 #include "media/base/rtp_utils.h"
@@ -27,8 +26,8 @@
 #include "pc/channel.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/constructor_magic.h"
-#include "rtc_base/experiments/audio_allocation_settings.h"
 #include "rtc_base/network_route.h"
+#include "rtc_base/scoped_ref_ptr.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/thread_checker.h"
 
@@ -106,8 +105,6 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
 
   rtc::ThreadChecker signal_thread_checker_;
   rtc::ThreadChecker worker_thread_checker_;
-
-  const webrtc::AudioAllocationSettings allocation_settings_;
 
   // The audio device module.
   rtc::scoped_refptr<webrtc::AudioDeviceModule> adm_;

@@ -176,7 +176,6 @@ struct ProbeClusterConfig {
   DataRate target_data_rate = DataRate::Zero();
   TimeDelta target_duration = TimeDelta::Zero();
   int32_t target_probe_count = 0;
-  int32_t id = 0;
 };
 
 struct TargetTransferRate {

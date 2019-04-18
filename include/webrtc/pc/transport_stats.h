@@ -39,6 +39,9 @@ typedef std::vector<TransportChannelStats> TransportChannelStatsList;
 
 // Information about the stats of a transport.
 struct TransportStats {
+  TransportStats();
+  ~TransportStats();
+
   std::string transport_name;
   TransportChannelStatsList channel_stats;
 };
