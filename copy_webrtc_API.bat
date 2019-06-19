@@ -36,6 +36,7 @@ call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ pc
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ call 										
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ media\base 								
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ media\engine							
+call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ media\sctp							
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ modules\include							
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ modules\include							
 call %batchDir%\copy_include_folder %src%\ %include%\webrtc\ modules\video_capture
