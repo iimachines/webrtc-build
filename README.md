@@ -1,4 +1,6 @@
-# webrtc-build
+# NOTE: This project is no longer maintained
+
+## webrtc-build
 
 Prebuilt (currently `m73`) static [webrtc native](https://webrtc.org/native-code/) libraries + headers, and a Windows batch file to download and build them.
 
